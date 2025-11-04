@@ -137,6 +137,9 @@ export const like = (() => {
      * @returns {void}
      */
     const init = () => {
+        if (document.body?.dataset?.url) {
+            return;
+        }
         listeners = new Map();
         likes = storage('likes');
     };

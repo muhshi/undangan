@@ -666,6 +666,9 @@ export const comment = (() => {
      * @returns {void}
      */
     const init = () => {
+        if (document.body?.dataset?.url) {
+            return;
+        }
         gif.init();
         like.init();
         card.init();

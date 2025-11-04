@@ -136,6 +136,122 @@ export const cacheWrapper = (cacheName) => {
     };
 };
 
+export const API = (() => {
+    /**
+     * @returns {string}
+     */
+    const computeBase = () => {
+        const body = document.body || document.querySelector('body');
+        const raw = body?.dataset?.url ?? '';
+        return raw.replace(/\/+$/, '');
+    };
+
+    /**
+     * @param {Response} res
+     * @returns {Promise<any>}
+     */
+    const parse = async (res) => {
+        let json = null;
+
+        try {
+            json = await res.json();
+        } catch {
+            json = null;
+        }
+
+        if (!res.ok || (json && json.ok === false)) {
+            const payload = (json && (json.error || json)) || {};
+            const message = typeof payload?.message === 'string' && payload.message.length
+                ? payload.message
+                : res.statusText || 'Request failed';
+
+            const err = new Error(message);
+            if (payload && typeof payload === 'object') {
+                Object.assign(err, payload);
+            }
+            err.status = res.status;
+            throw err;
+        }
+
+        if (json && Object.prototype.hasOwnProperty.call(json, 'data')) {
+            return json.data;
+        }
+
+        return json;
+    };
+
+    /**
+     * @param {string} path
+     * @returns {string}
+     */
+    const buildUrl = (path) => {
+        const base = computeBase();
+        if (!base) {
+            throw new Error('API base URL is not configured');
+        }
+
+        return `${base}${path.startsWith('/') ? path : `/${path}`}`;
+    };
+
+    const baseHeaders = {
+        Accept: 'application/json',
+    };
+
+    const jsonHeaders = {
+        ...baseHeaders,
+        'Content-Type': 'application/json',
+    };
+
+    /**
+     * @param {RequestInfo|URL} input
+     * @param {RequestInit} init
+     * @returns {Promise<any>}
+     */
+    const handleFetch = async (input, init) => {
+        const finalInit = { cache: 'no-store', ...init };
+        try {
+            const res = await fetch(input, finalInit);
+            return await parse(res);
+        } catch (err) {
+            if (err?.name === 'TypeError') {
+                throw new Error('Gagal fetch. Cek koneksi.');
+            }
+
+            throw err;
+        }
+    };
+
+    return {
+        /**
+         * @param {string} path
+         * @param {RequestInit} [options={}]
+         * @returns {Promise<any>}
+         */
+        async get(path, options = {}) {
+            const { headers = {}, ...rest } = options;
+            return handleFetch(buildUrl(path), {
+                ...rest,
+                headers: { ...baseHeaders, ...headers },
+            });
+        },
+        /**
+         * @param {string} path
+         * @param {any} body
+         * @param {RequestInit} [options={}]
+         * @returns {Promise<any>}
+         */
+        async post(path, body, options = {}) {
+            const { headers = {}, ...rest } = options;
+            return handleFetch(buildUrl(path), {
+                method: 'POST',
+                ...rest,
+                headers: { ...jsonHeaders, ...headers },
+                body: body === undefined ? undefined : JSON.stringify(body),
+            });
+        },
+    };
+})();
+
 /**
  * @param {string} method 
  * @param {string} path 
