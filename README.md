@@ -1,70 +1,107 @@
-# 💌 Template website undangan pernikahan sederhana
+# 💌 Undangan Digital – Muhshi Edition
 
 ![Thumbnail](/assets/images/banner.webp)
 
-[![Netlify Status](https://api.netlify.com/api/v1/badges/cef32dbf-f26f-4865-84a9-b85a439c9994/deploy-status)](https://app.netlify.com/sites/ulems/deploys)
-[![Hits](https://dikit.my.id/0b3y8q)](https://cie.my.id)
-[![GitHub repo size](https://img.shields.io/github/repo-size/dewanakl/undangan?color=brightgreen)](https://shields.io)
-[![GitHub License](https://img.shields.io/github/license/dewanakl/undangan?color=brightgreen)](https://shields.io)
+Undangan ini adalah versi kustom dari template undangan digital yang sudah terhubung penuh dengan backend Laravel API v1. Semua data acara, tamu, RSVP, komentar, like, hingga balasan komentar diambil dan disinkronkan secara real-time dari API.
 
 ## 🚀 Demo
-Untuk kamu yang ingin melihat demo terlebih dahulu:
 
-[https://ulems.my.id/?to=Teman teman semua](https://ulems.my.id/?to=Teman%20teman%20semua)
+Live preview: **[https://undangan.muhshi.my.id](https://undangan.muhshi.my.id)**
 
-## 📦 Documentation
+## ✨ Fitur Utama
+- ✅ Integrasi penuh dengan API Laravel (`/api/v1`) untuk event, tamu, RSVP, komentar, like, dan balasan.
+- ✅ Form RSVP dinamis: mendukung token tamu maupun input manual.
+- ✅ Komentar & balasan dengan perhitungan waktu relatif yang akurat.
+- ✅ Sistem like yang tersinkronisasi dengan backend, termasuk status like pengguna saat refresh.
+- ✅ Optimasi aset dinamis (gallery, story video, QRIS, dll.) sesuai konfigurasi event.
+- ✅ Mode self-host & demo: dikendalikan melalui atribut `data-*` pada `<body>`.
+- ✅ Build bundle via esbuild untuk loading yang cepat.
 
-* Jalankan perintah `npm install`, lalu `npm run dev`, dan buka `http://localhost:8080`.
-* Ubah isi file `index.html` sesuai keinginanmu.
-* Jika tidak ingin menggunakan **fitur komentar**, hapus atribut `data-url` dan `data-key` di elemen `<body>` pada index.html.
-* Sesuaikan `data-url` pada `<body>` di index dan dashboard sesuai dengan URL backend (jika kamu meng-hosting sendiri).
-* Sesuaikan juga `data-key` di index dengan access key yang bisa kamu ambil dari dashboard.
-* Jika ingin menggunakan GIF, dapatkan Tenor API key di [developers.google.com/tenor](https://developers.google.com/tenor/guides/quickstart).
-* Untuk deployment, jalankan `npm run build:public`. Folder `public` adalah yang akan kamu upload.
-* Untuk backend self-hosting, lihat penjelasan di bawah, atau gunakan **trial API** secara gratis.
+## 🧩 Struktur Penting
+- `index.html` – halaman undangan utama.
+- `js/guest-local.js` – perekat front-end ↔ API.
+- `js/connection/request.js` – helper fetch dengan kontrol error & no-cache.
+- `api-implementation.md` – catatan endpoint backend yang dipakai.
 
-> Undangan ini hanya menggunakan HTML, CSS, dan JavaScript biasa. NPM digunakan agar file JavaScript bisa langsung dieksekusi (bukan bertipe module lagi).
+## ⚙️ Persiapan & Pengembangan
 
-> Jika tetap ingin tanpa NPM, ubah `src="./dist/guest.js"` menjadi `src="./js/guest.js" type="module"` pada tag `<head>` di index dan dashboard.html, dengan risiko glitch tema di awal loading.
+```bash
+# instal dependensi
+npm install
 
-> Jika kamu punya pertanyaan, gunakan fitur `discussions` agar bisa dibaca juga oleh teman-teman lainnya.
+# mode pengembangan (serve di http://localhost:8080)
+npm run dev
 
-> [!WARNING]  
-> Gunakan versi 3.14.0, untuk versi 4 masih tahap pengembangan dan berpotensi teredapat bug 🐛
+# build bundel produksi
+npm run build
 
-## 🔥 Deployment API
+# siapkan folder public/ untuk deploy static
+npm run build:public
+```
 
-- Video\
-    otw
+> Kamu bebas menggunakan `pnpm` atau `yarn`, sesuaikan dengan package manager favoritmu.
 
-- Presentation
-    [https://docs.google.com/presentation](https://docs.google.com/presentation/d/1EY2YmWdZUI7ASoo0f2wvU7ec_Yt0uZanYa8YLbfNysk/edit)
+## 🔧 Konfigurasi Atribut `<body>`
 
-## ⏰ Trial API
-Untuk kamu yang ingin mencoba secara gratis:
+Pastikan atribut berikut diset baik di `index.html` maupun `dashboard.html`:
 
-[https://trial.ulems.my.id](https://trial.ulems.my.id)
+| Atribut            | Contoh nilai                         | Keterangan |
+|--------------------|--------------------------------------|------------|
+| `data-url`         | `https://domainmu/api/v1`            | Base URL API backend (tanpa trailing slash). |
+| `data-token-param` | `token`                              | Nama query string untuk token undangan. |
+| `data-event-slug`  | `akad-nikah`                         | Slug event default ketika token tidak tersedia. |
+| `data-confetti`    | `true` atau `false`                  | Menentukan animasi confetti saat undangan dibuka. |
+| `data-audio`       | `https://.../backsound.mp3` (opsi)   | Jalur audio custom; bisa dikosongkan. |
+| `data-time`        | `2025-12-07 08:00:00` (opsi)         | Override waktu hitung mundur jika perlu. |
 
-## ⚙️ Tech stack
+Contoh:
 
+```html
+<body
+  data-url="https://undangan.muhshi.my.id/api/v1"
+  data-token-param="token"
+  data-event-slug="akad-nikah"
+  data-confetti="true"
+  data-audio=""
+  data-time=""
+>
+```
+
+## 🔄 Alur Integrasi API (Ringkas)
+1. Jika query `?token=` ada, front-end memanggil `GET /invites/{token}` untuk mendapatkan event + tamu.
+2. Jika token kosong/tidak valid, fallback ke `GET /events/{slug}`.
+3. Form RSVP mem-post ke `POST /rsvps` dengan payload dinamis (otomatis menggunakan token bila tersedia).
+4. Komentar diambil dari endpoint `/rsvps` atau `/events/{slug}/rsvps` (pagination offset).
+5. Like komentar: `POST /rsvps/{id}/like`.
+6. Balasan komentar: `POST /rsvps/{id}/replies`.
+
+Detail endpoint tersedia di [`api-implementation.md`](api-implementation.md).
+
+## 🧪 Rekomendasi Pengujian
+- Uji kirim RSVP baru (dengan & tanpa token).
+- Uji komentar + balasan; refresh untuk memastikan waktu & like tetap konsisten.
+- Verifikasi viewport mobile vs desktop (gallery, hero, slider).
+- Jalankan `npm run lint:*` untuk cek konsistensi kode bila diperlukan.
+
+## 📦 Deployment
+1. Jalankan `npm run build:public`.
+2. Upload isi folder `public/` ke hosting static (Netlify, Vercel, S3, dsb).
+3. Pastikan backend Laravel-mu dapat diakses dari domain final (CORS, HTTPS, dsb).
+
+## 🛠️ Tech Stack
 - Bootstrap 5.3.8
 - AOS 2.3.4
-- Fontawesome 7.1.0
+- Font Awesome 7.1.0
 - Canvas Confetti 1.9.3
-- Google Fonts
-- Vanilla JS
+- esbuild 0.25.x
+- Vanilla JavaScript
 
-## 🎨 Credit
-All visual assets in this project are sourced from Pixabay.
+## 🎨 Kredit
+Sebagian besar aset visual berasal dari Pixabay & koleksi pribadi. Silakan ganti dengan aset milikmu sendiri untuk produksi.
 
-## 🤝 Contributing
+## 📝 Lisensi
+Proyek ini tetap berada di bawah lisensi [MIT](https://opensource.org/licenses/MIT). Silakan modifikasi sesuai kebutuhan, sertakan atribusi apabila membagikan ulang.
 
-I'm very open to those of you who want to contribute to the undangan!
+---
 
-## 🐞 Security Vulnerabilities
-
-If you find any security vulnerabilities in this undangan, please email DKL via [dewanakretarta29@gmail.com](mailto:dewanakretarta29@gmail.com).
-
-## 📜 License
-
-Undangan is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Terima kasih sudah menggunakan Undangan Digital versi Muhshi. Semoga membantu menyiapkan momen spesialmu! 💐

@@ -1,0 +1,11 @@
+services:
+  undangan-fe:
+    build:
+      context: .
+    image: undangan-fe:latest
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    # Opsi dev-only: mount read-only sumber (tidak wajib untuk produksi)
+    # volumes:
+    #   - ./public:/usr/share/nginx/html:ro
