@@ -3,5 +3,28 @@ services:
     build: .
     image: undangan-fe:latest
     ports:
-      - "8082:8080"     # akses via http://10.133.21.24:8082
+      - "8082:8080"
     restart: unless-stopped
+    networks:
+      - undangan-network
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "8089:80"      # HTTP
+      - "443:443"      # HTTPS
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+    networks:
+      - undangan-network
+
+networks:
+  undangan-network:
+    driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:
