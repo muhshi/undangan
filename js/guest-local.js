@@ -1538,3 +1538,23 @@ if (
 }
 
 console.log("API URL:", document.body.dataset.url);
+
+// guest-local.js - Auto-detect environment
+(function () {
+  const isDev =
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1" ||
+    window.location.port === "8080";
+
+  console.log("Environment:", isDev ? "Development" : "Production");
+  console.log("API URL:", document.body.dataset.url);
+
+  if (isDev) {
+    // Development: override ke backend langsung
+    console.log("Development mode: using direct backend URL");
+    document.body.dataset.url = "http://10.133.21.24:8002/api/v1";
+  } else {
+    // Production: gunakan relative path (sudah di-set di index.html)
+    console.log("Production mode: using relative API path");
+  }
+})();

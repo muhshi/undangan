@@ -1,6 +1,7 @@
 # --- builder ---
 FROM node:20-alpine AS builder
 WORKDIR /app
+ENV NODE_ENV=production
 
 COPY package.json ./
 COPY package-lock.json* ./
@@ -8,8 +9,9 @@ RUN if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-f
 
 COPY . .
 RUN npm run build:public
-# jaga-jaga kalau file ini di-refer tapi tidak ada
-RUN mkdir -p public/js && [ -f public/js/guest-local.js ] || printf '/* noop */\n' > public/js/guest-local.js
+
+# Pastikan modul JS runtime ikut tersalin
+RUN [ -d js ] && cp -r js public/js || true
 
 # --- runtime ---
 FROM nginx:alpine
