@@ -17,6 +17,9 @@ RUN if [ -f package-lock.json ]; then \
 # Salin source dan build
 COPY . .
 RUN npm run build:public
+# pastikan stub ada jika tidak disediakan
+RUN mkdir -p public/js && [ -f public/js/guest-local.js ] || printf '/* noop */\n' > public/js/guest-local.js
+
 
 # --- runtime ---
 FROM nginx:alpine
