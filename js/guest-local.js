@@ -1524,3 +1524,17 @@ window.addEventListener("DOMContentLoaded", () => {
     el.sendBtn.onclick = () => sendRSVP(el.sendBtn);
   }
 });
+
+// Auto-detect environment
+if (
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1"
+) {
+  // Development: gunakan IP langsung
+  document.body.dataset.url = "http://10.133.21.24:8002/api/v1";
+} else {
+  // Production: gunakan relative path (akan di-proxy Caddy)
+  document.body.dataset.url = "/api/v1";
+}
+
+console.log("API URL:", document.body.dataset.url);
