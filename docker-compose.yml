@@ -1,23 +1,27 @@
 services:
+  # Frontend (Nginx + built React/Vue/dll)
   undangan-fe:
     build: .
     image: undangan-fe:latest
-    ports:
-      - "8082:8080"
+    container_name: undangan-fe
     restart: unless-stopped
     networks:
       - undangan-network
 
+  # Reverse Proxy (Caddy)
   caddy:
     image: caddy:2-alpine
+    container_name: undangan-caddy
     ports:
-      - "8089:80"      # HTTP
-      - "443:443"      # HTTPS
+      - "8090:80"      # Pakai port 8090 karena 8089 dipake Puslah
+      - "8443:443"     # HTTPS (opsional)
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     restart: unless-stopped
+    depends_on:
+      - undangan-fe
     networks:
       - undangan-network
 

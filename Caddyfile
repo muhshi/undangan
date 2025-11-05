@@ -1,40 +1,53 @@
-:8089 {
-    encode gzip zstd
-    
-    # API langsung ke backend Laravel
-    handle /api/* {
-        reverse_proxy http://10.133.21.24:8002 {
-            header_up Host localhost:8089
-            header_up Accept application/json
-        }
-    }
-    
-    # Storage/assets dari backend
-    handle /storage/* {
-        reverse_proxy http://10.133.21.24:8002
-    }
-    
-    # Sisanya ke frontend
-    handle {
-        reverse_proxy undangan-fe:8080
-    }
+{
+    # Global options
+    admin off
+    auto_https off
 }
 
-undangan.muhshi.my.id {
+:80 {
+    # Logging
+    log {
+        output stdout
+        format console
+        level INFO
+    }
+
+    # Kompresi
     encode gzip zstd
-    
+
+    # ===========================================
+    # Route 1: API requests → Backend FrankenPHP
+    # ===========================================
     handle /api/* {
         reverse_proxy http://10.133.21.24:8002 {
+            # Header penting untuk Laravel
             header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
             header_up Accept application/json
         }
     }
-    
+
+    # ===========================================
+    # Route 2: Storage/uploads → Backend
+    # ===========================================
     handle /storage/* {
-        reverse_proxy http://10.133.21.24:8002
+        reverse_proxy http://10.133.21.24:8002 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+        }
     }
-    
+
+    # ===========================================
+    # Route 3: Frontend (default)
+    # ===========================================
     handle {
-        reverse_proxy undangan-fe:8080
+        reverse_proxy undangan-fe:8080 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+        }
     }
 }
