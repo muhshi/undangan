@@ -1,3 +1,4 @@
+# --- builder ---
 FROM node:20-alpine AS builder
 WORKDIR /app
 ENV NODE_ENV=production
@@ -7,13 +8,13 @@ COPY package-lock.json* ./
 RUN if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi
 
 COPY . .
-# build + copy artefak ke /public tanpa fs-extra
+# build bundling
 RUN npm run build \
     && mkdir -p public \
     && for f in assets css dist index.html dashboard.html; do \
     [ -e "$f" ] && cp -r "$f" public/ || true; \
     done \
-    && [ -d js ] && cp -r js public/js || true
+    && [ -d js ] && mkdir -p public/js && cp -r js/* public/js/ || true
 
 # --- runtime ---
 FROM nginx:alpine
