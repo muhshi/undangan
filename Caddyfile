@@ -1,2 +1,40 @@
-undangan.muhshi.my.id { encode gzip zstd handle /api/* { reverse_proxy
-http://10.133.21.24:8002 } handle { reverse_proxy undangan-fe:8080 } }
+:8089 {
+    encode gzip zstd
+    
+    # API langsung ke backend Laravel
+    handle /api/* {
+        reverse_proxy http://10.133.21.24:8002 {
+            header_up Host localhost:8089
+            header_up Accept application/json
+        }
+    }
+    
+    # Storage/assets dari backend
+    handle /storage/* {
+        reverse_proxy http://10.133.21.24:8002
+    }
+    
+    # Sisanya ke frontend
+    handle {
+        reverse_proxy undangan-fe:8080
+    }
+}
+
+undangan.muhshi.my.id {
+    encode gzip zstd
+    
+    handle /api/* {
+        reverse_proxy http://10.133.21.24:8002 {
+            header_up Host {host}
+            header_up Accept application/json
+        }
+    }
+    
+    handle /storage/* {
+        reverse_proxy http://10.133.21.24:8002
+    }
+    
+    handle {
+        reverse_proxy undangan-fe:8080
+    }
+}
