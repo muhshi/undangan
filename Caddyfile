@@ -1,0 +1,4 @@
+undangan.muhshi.my.id {
+	encode gzip zstd
+	reverse_proxy undangan-fe:8080
+}
