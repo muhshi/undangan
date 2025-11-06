@@ -17,9 +17,6 @@ export const audio = (() => {
       return;
     }
 
-    /**
-     * @type {HTMLAudioElement|null}
-     */
     let audioEl = null;
 
     try {
@@ -27,7 +24,7 @@ export const audio = (() => {
         await cache("audio").withForceCache().get(url, progress.getAbort())
       );
       audioEl.loop = true;
-      audioEl.muted = true; // ← START MUTED (bypass autoplay block)
+      audioEl.muted = true; // Start muted
       audioEl.autoplay = false;
       audioEl.controls = false;
 
@@ -38,12 +35,32 @@ export const audio = (() => {
     }
 
     let isPlay = false;
-    let userInteracted = false; // ← Track user interaction
     const music = document.getElementById("button-music");
 
     /**
-     * @returns {Promise<void>}
+     * Play audio
      */
+
+    const showToast = (message, duration = 3000) => {
+      const existingToast = document.getElementById("audio-toast");
+      if (existingToast) existingToast.remove();
+
+      const toast = document.createElement("div");
+      toast.id = "audio-toast";
+      toast.className =
+        "position-fixed bottom-0 start-50 translate-middle-x mb-3 alert alert-info alert-dismissible fade show";
+      toast.style.cssText = "z-index: 9999; max-width: 90%; min-width: 280px;";
+      toast.innerHTML = `
+    <i class="fa-solid fa-music me-2"></i>${message}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  `;
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.remove("show");
+        setTimeout(() => toast.remove(), 200);
+      }, duration);
+    };
     const play = async () => {
       if (!navigator.onLine || !music) {
         return;
@@ -51,84 +68,90 @@ export const audio = (() => {
 
       music.disabled = true;
       try {
-        // Unmute if user already interacted
-        if (userInteracted) {
-          audioEl.muted = false;
-        }
-
         await audioEl.play();
         isPlay = true;
         music.disabled = false;
         music.innerHTML = statePlay;
+
+        // Log tanpa alert
+        console.log(
+          `🎵 Audio playing (${audioEl.muted ? "muted" : "unmuted"})`
+        );
       } catch (err) {
         isPlay = false;
         music.disabled = false;
 
-        // Only show error if not autoplay block
-        if (err.name !== "NotAllowedError") {
-          util.notify(err).error();
+        if (err.name === "NotAllowedError") {
+          console.warn("⚠️ Audio blocked");
+          // Optional: show subtle toast
+          showToast("Tap the music button to enable sound 🎵");
+        } else {
+          console.error("Audio error:", err);
         }
-
-        console.warn("Audio autoplay blocked. User interaction required.");
       }
     };
 
     /**
-     * @returns {void}
+     * Pause audio
      */
     const pause = () => {
       isPlay = false;
       audioEl.pause();
       music.innerHTML = statePause;
+      console.log("⏸️ Audio paused");
     };
 
     /**
-     * Manual play with unmute (user interaction)
-     * @returns {Promise<void>}
+     * Toggle with unmute
      */
-    const playWithSound = async () => {
-      userInteracted = true;
-      audioEl.muted = false;
-      await play();
+    const togglePlay = async () => {
+      if (isPlay) {
+        pause();
+      } else {
+        // Unmute on user click
+        audioEl.muted = false;
+        await play();
+      }
     };
 
+    // Listen for undangan.open
     document.addEventListener("undangan.open", () => {
       music.classList.remove("d-none");
 
       if (playOnOpen) {
-        // Try autoplay (muted first)
-        play()
-          .then(() => {
-            console.log("Audio started (muted)");
-          })
-          .catch(() => {
-            console.log("Audio autoplay failed, waiting for user click");
-          });
+        // Try muted autoplay immediately
+        (async () => {
+          try {
+            await play();
+
+            // If successful, auto-unmute after delay
+            if (isPlay) {
+              setTimeout(() => {
+                if (isPlay && audioEl.muted) {
+                  console.log("🔊 Auto-unmuting...");
+                  audioEl.muted = false;
+                }
+              }, 1000);
+            }
+          } catch (err) {
+            // Silent catch, user can click button manually
+            console.log(
+              "Audio autoplay not allowed, user can enable via button"
+            );
+          }
+        })();
       }
     });
 
+    // Music button
+    music.addEventListener("click", togglePlay);
     music.addEventListener("offline", pause);
-    music.addEventListener("click", () => {
-      if (isPlay) {
-        pause();
-      } else {
-        playWithSound(); // ← Use playWithSound for user click
-      }
-    });
   };
 
-  /**
-   * @returns {object}
-   */
   const init = () => {
     progress.add();
-
-    return {
-      load,
-    };
+    return { load };
   };
 
-  return {
-    init,
-  };
+  return { init };
 })();
