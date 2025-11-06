@@ -670,6 +670,12 @@ const applyEventToDom = (event, guest) => {
     }
   }
 
+  if (event.music?.file) {
+    BODY.dataset.audio = resolveAsset(event.music.file);
+  } else {
+    BODY.dataset.audio = "";
+  }
+
   const dateText = fmtDate(event.start_at);
   const timeText = fmtTimeRange(event.start_at, event.end_at);
   setTextAll(el.eventDate, dateText);
@@ -727,12 +733,6 @@ const applyEventToDom = (event, guest) => {
     el.storyBox.dataset.src = storyVideo;
   } else {
     el.storyBtn?.classList.add("d-none");
-  }
-
-  if (event.music?.file) {
-    BODY.dataset.audio = resolveAsset(event.music.file);
-  } else if (BODY.dataset.audio) {
-    BODY.dataset.audio = "";
   }
 
   if (!BODY.dataset.time && event.start_at) {
@@ -1538,6 +1538,131 @@ if (
 }
 
 console.log("API URL:", document.body.dataset.url);
+(function () {
+  let audioEl = null;
+  let isPlaying = false; // status play
+  let isUserUnmuted = false; // baru true setelah interaksi user
+  const btn = () => document.getElementById("button-music");
+  const btnIcon = () => btn()?.querySelector("i");
+
+  function ensureAudio() {
+    if (audioEl) return audioEl;
+    const src = (document.body.dataset.audio || "").trim();
+    if (!src) return null;
+    audioEl = new Audio(src);
+    audioEl.preload = "auto";
+    audioEl.loop = true;
+    audioEl.muted = true; // autoplay aman
+    audioEl.playsInline = true; // iOS Safari
+    // sinkronkan ikon saat selesai/pausa
+    audioEl.addEventListener("play", updateIcon);
+    audioEl.addEventListener("pause", updateIcon);
+    return audioEl;
+  }
+
+  async function safePlayMuted() {
+    const el = ensureAudio();
+    if (!el) return false;
+    try {
+      await el.play(); // start muted
+      isPlaying = true;
+      updateIcon();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async function unmuteAndPlay() {
+    const el = ensureAudio();
+    if (!el) return;
+    el.muted = false;
+    isUserUnmuted = true;
+    try {
+      await el.play();
+      isPlaying = true;
+    } catch {}
+    updateIcon();
+  }
+
+  function toggleByUser() {
+    const el = ensureAudio();
+    if (!el) return;
+    // interaksi user memperbolehkan suara
+    if (el.muted) {
+      el.muted = false;
+      isUserUnmuted = true;
+      el.play().catch(() => {});
+      isPlaying = true;
+    } else {
+      if (el.paused) {
+        el.play().catch(() => {});
+        isPlaying = true;
+      } else {
+        el.pause();
+        isPlaying = false;
+      }
+    }
+    updateIcon();
+  }
+
+  function updateIcon() {
+    const i = btnIcon();
+    if (!i) return;
+    // Jika belum unmuted oleh user, tampilkan ikon “mute” agar jelas
+    if (!isUserUnmuted) {
+      i.className = "fa-solid fa-volume-xmark";
+      return;
+    }
+    // Setelah unmute: play = pause-icon, pause = play-icon
+    if (isPlaying && !audioEl?.paused) {
+      i.className = "fa-solid fa-circle-pause";
+    } else {
+      i.className = "fa-solid fa-circle-play";
+    }
+  }
+
+  function showBtn() {
+    const b = btn();
+    if (!b) return;
+    b.classList.remove("d-none");
+    b.onclick = toggleByUser;
+    updateIcon();
+  }
+
+  document.addEventListener("undangan.open", async () => {
+    showBtn();
+    const ok = await safePlayMuted();
+    if (ok && audioEl?.muted) {
+      // beri hint singkat
+      const banner = document.createElement("div");
+      banner.className =
+        "alert alert-info position-fixed top-0 start-50 translate-middle-x mt-3";
+      banner.style.zIndex = "9999";
+      banner.innerHTML = `
+        <i class="fa-solid fa-music me-2"></i>
+        Tap tombol musik untuk menyalakan suara
+        <button class="btn-close ms-2" onclick="this.parentElement.remove()"></button>`;
+      document.body.appendChild(banner);
+      setTimeout(() => banner.remove(), 4000);
+    }
+  });
+
+  // Fallback: interaksi pertama di mana pun → unmute & play sekali
+  const resumeOnce = async () => {
+    showBtn();
+    await unmuteAndPlay();
+    ["click", "touchstart", "keydown"].forEach((ev) =>
+      document.removeEventListener(ev, resumeOnce, { passive: true })
+    );
+  };
+  ["click", "touchstart", "keydown"].forEach((ev) =>
+    document.addEventListener(ev, resumeOnce, { passive: true, once: true })
+  );
+
+  // Ekspos minimal jika perlu debugging
+  window.__undanganMusic = { ensureAudio, unmuteAndPlay };
+})();
 
 (function () {
   "use strict";
