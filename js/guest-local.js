@@ -1539,22 +1539,60 @@ if (
 
 console.log("API URL:", document.body.dataset.url);
 
-// guest-local.js - Auto-detect environment
 (function () {
-  const isDev =
-    window.location.hostname === "localhost" ||
-    window.location.hostname === "127.0.0.1" ||
-    window.location.port === "8080";
+  "use strict";
 
-  console.log("Environment:", isDev ? "Development" : "Production");
-  console.log("API URL:", document.body.dataset.url);
+  console.log("[guest-local] Initializing...");
 
-  if (isDev) {
-    // Development: override ke backend langsung
-    console.log("Development mode: using direct backend URL");
-    document.body.dataset.url = "http://10.133.21.24:8002/api/v1";
+  // Wait for DOM and undangan object
+  const init = () => {
+    if (typeof undangan === "undefined" || !undangan.guest) {
+      console.warn("[guest-local] Waiting for undangan object...");
+      setTimeout(init, 100);
+      return;
+    }
+
+    console.log("[guest-local] Undangan object loaded");
+
+    // Get token from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get(document.body.dataset.tokenParam || "token");
+
+    if (!token) {
+      console.warn("[guest-local] No token in URL");
+      return;
+    }
+
+    console.log("[guest-local] Token found:", token.substring(0, 20) + "...");
+
+    // Auto-open invitation after page load
+    window.addEventListener("load", () => {
+      console.log("[guest-local] Page loaded, auto-opening invitation...");
+
+      // Find and click the open button
+      setTimeout(() => {
+        const openBtn = document.querySelector(
+          'button[onclick*="undangan.guest.open"]'
+        );
+        if (openBtn) {
+          console.log("[guest-local] Clicking open button...");
+          openBtn.click();
+        } else {
+          console.warn(
+            "[guest-local] Open button not found, trying manual open..."
+          );
+          if (typeof undangan.guest.open === "function") {
+            undangan.guest.open();
+          }
+        }
+      }, 500); // Delay 500ms to ensure everything is loaded
+    });
+  };
+
+  // Start initialization
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
   } else {
-    // Production: gunakan relative path (sudah di-set di index.html)
-    console.log("Production mode: using relative API path");
+    init();
   }
 })();
