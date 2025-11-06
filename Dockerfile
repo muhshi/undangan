@@ -8,13 +8,35 @@ COPY package-lock.json* ./
 RUN if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi
 
 COPY . .
-# build bundling
-RUN npm run build \
-    && mkdir -p public \
-    && for f in assets css dist index.html dashboard.html; do \
+
+# Build bundling
+RUN npm run build
+
+# Ensure public structure exists
+RUN mkdir -p public/js public/assets public/css public/dist
+
+# Copy built files (dist from npm run build)
+RUN for f in assets css dist index.html dashboard.html; do \
     [ -e "$f" ] && cp -r "$f" public/ || true; \
-    done \
-    && [ -d js ] && mkdir -p public/js && cp -r js/* public/js/ || true
+    done
+
+# Copy js folder AFTER build (important!)
+RUN if [ -d js ]; then \
+    echo "Copying js/ to public/js/..."; \
+    cp -rv js/* public/js/; \
+    else \
+    echo "Warning: js/ folder not found"; \
+    fi
+
+# Verify guest-local.js exists and is not empty
+RUN if [ -f public/js/guest-local.js ]; then \
+    echo "✅ guest-local.js found ($(stat -c%s public/js/guest-local.js) bytes)"; \
+    head -5 public/js/guest-local.js; \
+    else \
+    echo "⚠️ guest-local.js NOT found, creating noop..."; \
+    mkdir -p public/js; \
+    printf '/* noop guest-local */\n' > public/js/guest-local.js; \
+    fi
 
 # --- runtime ---
 FROM nginx:alpine
