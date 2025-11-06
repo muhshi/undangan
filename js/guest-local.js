@@ -1542,54 +1542,41 @@ console.log("API URL:", document.body.dataset.url);
 (function () {
   "use strict";
 
-  console.log("[guest-local] Initializing...");
-
-  // Wait for DOM and undangan object
+  // Wait for DOM
   const init = () => {
-    if (typeof undangan === "undefined" || !undangan.guest) {
-      console.warn("[guest-local] Waiting for undangan object...");
-      setTimeout(init, 100);
+    if (!document.body) {
+      console.log("[guest-local] Waiting for body...");
+      setTimeout(init, 50);
       return;
     }
 
-    console.log("[guest-local] Undangan object loaded");
+    // Original code starts here
+    const BODY = document.body;
+    const params = new URLSearchParams(window.location.search);
+    const TOKEN_PARAM = BODY?.dataset?.tokenParam || "token";
+    const TOKEN = params.get(TOKEN_PARAM);
+    const EVENT_SLUG = BODY?.dataset?.eventSlug || "";
 
-    // Get token from URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get(document.body.dataset.tokenParam || "token");
+    const API_URL = (() => {
+      try {
+        const raw = (BODY?.dataset?.url || "").trim();
+        if (!raw) return null;
+        return new URL(raw, window.location.href);
+      } catch {
+        return null;
+      }
+    })();
 
-    if (!token) {
-      console.warn("[guest-local] No token in URL");
-      return;
-    }
-
-    console.log("[guest-local] Token found:", token.substring(0, 20) + "...");
-
-    // Auto-open invitation after page load
-    window.addEventListener("load", () => {
-      console.log("[guest-local] Page loaded, auto-opening invitation...");
-
-      // Find and click the open button
-      setTimeout(() => {
-        const openBtn = document.querySelector(
-          'button[onclick*="undangan.guest.open"]'
-        );
-        if (openBtn) {
-          console.log("[guest-local] Clicking open button...");
-          openBtn.click();
-        } else {
-          console.warn(
-            "[guest-local] Open button not found, trying manual open..."
-          );
-          if (typeof undangan.guest.open === "function") {
-            undangan.guest.open();
-          }
-        }
-      }, 500); // Delay 500ms to ensure everything is loaded
+    console.log("[guest-local] Initialized", {
+      TOKEN: TOKEN?.substring(0, 20) + "...",
+      EVENT_SLUG,
+      API_URL: API_URL?.href,
     });
+
+    // ... rest of your code ...
   };
 
-  // Start initialization
+  // Start when DOM ready
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
   } else {
