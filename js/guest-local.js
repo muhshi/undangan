@@ -1520,90 +1520,19 @@ window.addEventListener("DOMContentLoaded", () => {
     console.error(err);
     alertError(err);
   });
-  // if (el.sendBtn) {
-  //   el.sendBtn.removeAttribute("onclick");
-  //   el.sendBtn.onclick = () => sendRSVP(el.sendBtn);
-  // }
   if (el.sendBtn) {
     el.sendBtn.onclick = () => sendRSVP(el.sendBtn);
   }
 });
 
-// Auto-detect environment
-if (
-  window.location.hostname === "localhost" ||
-  window.location.hostname === "127.0.0.1"
-) {
-  // Development: gunakan IP langsung
-  document.body.dataset.url = "http://10.133.21.24:8002/api/v1";
-} else {
-  // Production: gunakan relative path (akan di-proxy Caddy)
-  document.body.dataset.url = "/api/v1";
-}
-// ===== AUDIO HANDLER =====
-document.addEventListener("undangan.open", () => {
-  console.log("🎵 [audio] undangan.open fired");
-
-  // Check if welcome is still visible (shouldn't happen!)
-  const welcome = document.getElementById("welcome");
-  if (welcome && welcome.style.opacity !== "0") {
-    console.warn("⚠️ [audio] Welcome still visible! Event fired too early.");
-    return; // Don't play yet
-  }
-
-  music.classList.remove("d-none");
-
-  if (playOnOpen) {
-    console.log("🎵 [audio] Attempting play...");
-    play().catch((err) => {
-      console.warn("⚠️ [audio] Play blocked:", err.name);
-    });
-  }
-});
-
-console.log("API URL:", document.body.dataset.url);
-
-(function () {
-  "use strict";
-
-  // Wait for DOM
-  const init = () => {
-    if (!document.body) {
-      console.log("[guest-local] Waiting for body...");
-      setTimeout(init, 50);
-      return;
-    }
-
-    // Original code starts here
-    const BODY = document.body;
-    const params = new URLSearchParams(window.location.search);
-    const TOKEN_PARAM = BODY?.dataset?.tokenParam || "token";
-    const TOKEN = params.get(TOKEN_PARAM);
-    const EVENT_SLUG = BODY?.dataset?.eventSlug || "";
-
-    const API_URL = (() => {
-      try {
-        const raw = (BODY?.dataset?.url || "").trim();
-        if (!raw) return null;
-        return new URL(raw, window.location.href);
-      } catch {
-        return null;
-      }
-    })();
-
-    console.log("[guest-local] Initialized", {
-      TOKEN: TOKEN?.substring(0, 20) + "...",
-      EVENT_SLUG,
-      API_URL: API_URL?.href,
-    });
-
-    // ... rest of your code ...
-  };
-
-  // Start when DOM ready
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
+// Optional helper: only override data-url when not provided via HTML
+if (!document.body.dataset.url) {
+  if (
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1"
+  ) {
+    document.body.dataset.url = "http://10.133.21.24:8002/api/v1";
   } else {
-    init();
+    document.body.dataset.url = "/api/v1";
   }
-})();
+}
