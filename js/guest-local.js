@@ -1536,6 +1536,26 @@ if (
   // Production: gunakan relative path (akan di-proxy Caddy)
   document.body.dataset.url = "/api/v1";
 }
+// ===== AUDIO HANDLER =====
+document.addEventListener("undangan.open", () => {
+  console.log("🎵 [audio] undangan.open fired");
+
+  // Check if welcome is still visible (shouldn't happen!)
+  const welcome = document.getElementById("welcome");
+  if (welcome && welcome.style.opacity !== "0") {
+    console.warn("⚠️ [audio] Welcome still visible! Event fired too early.");
+    return; // Don't play yet
+  }
+
+  music.classList.remove("d-none");
+
+  if (playOnOpen) {
+    console.log("🎵 [audio] Attempting play...");
+    play().catch((err) => {
+      console.warn("⚠️ [audio] Play blocked:", err.name);
+    });
+  }
+});
 
 console.log("API URL:", document.body.dataset.url);
 
