@@ -742,9 +742,13 @@ const applyEventToDom = (event, guest) => {
   startCountdown(event.start_at);
   if (event.title) document.title = event.title;
 
-  if (el.loading) el.loading.style.opacity = "0";
-  if (el.welcome) el.welcome.style.opacity = "1";
-  el.root?.classList.remove("opacity-0");
+  if (el.loading) {
+    el.loading.style.opacity = "0";
+    setTimeout(() => el.loading?.classList.add("d-none"), 400);
+  }
+  // Biarkan layar pembuka menunggu interaksi pengguna (tombol "Buka Undangan")
+  // sehingga tidak auto-open saat data selesai dimuat.
+  el.root?.classList.add("opacity-0");
 
   setBindings(event, guest);
   forceReplaceStoryVideo();
