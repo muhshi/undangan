@@ -396,7 +396,7 @@ export const guest = (() => {
       // Baik demo maupun self-host tetap load asset visual
       vid.load();
       img.load();
-      aud.load();
+      aud.load(false);
       lib.load({
         confetti: document.body.getAttribute("data-confetti") === "true",
       });
@@ -408,7 +408,7 @@ export const guest = (() => {
         // Biarkan asset visual tetap jalan; koneksi ke backend-mu ditangani oleh guest-local.js
         if (!img.hasDataSrc()) img.load();
         vid.load();
-        aud.load();
+        aud.load(false);
         lib.load({
           confetti: document.body.getAttribute("data-confetti") === "true",
         });
@@ -432,7 +432,7 @@ export const guest = (() => {
             }
 
             vid.load();
-            aud.load();
+            aud.load(false);
             lib.load({ confetti: data.is_confetti_animation });
 
             comment
