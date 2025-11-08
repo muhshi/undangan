@@ -7,10 +7,10 @@ export const audio = (() => {
   const statePause = '<i class="fa-solid fa-circle-play"></i>';
 
   /**
-   * @param {boolean} [playOnOpen=false]
+   * @param {boolean} [playOnOpen=true]
    * @returns {Promise<void>}
    */
-  const load = async (playOnOpen = false) => {
+  const load = async (playOnOpen = true) => {
     const url = document.body.getAttribute("data-audio");
     if (!url) {
       progress.complete("audio", true);
